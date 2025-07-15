@@ -109,3 +109,52 @@ class MaximumMetric(AbstractMetric):
                 distance = value
 
         return distance
+
+class CosineMetric(AbstractMetric):
+    """
+    Cosine distance: 1 - (x · y) / (‖x‖‖y‖)
+    """
+    name = 'cosine_metric'
+
+    @classmethod
+    def get_distance_time_series(cls,
+                                 time_series_x, time_series_y,
+                                 embedding_dimension, time_delay,
+                                 index_x, index_y):
+        # build the two embedded vectors
+        x_vec = np.array([
+            time_series_x[index_x + i * time_delay]
+            for i in range(embedding_dimension)
+        ], dtype=float)
+        y_vec = np.array([
+            time_series_y[index_y + i * time_delay]
+            for i in range(embedding_dimension)
+        ], dtype=float)
+
+        # dot product and norms
+        dot = np.dot(x_vec, y_vec)
+        norm_x = np.linalg.norm(x_vec)
+        norm_y = np.linalg.norm(y_vec)
+        # guard against zero‐vector
+        if norm_x == 0 or norm_y == 0:
+            return 1.0
+        # cosine distance
+        return 1.0 - (dot / (norm_x * norm_y))
+
+    @classmethod
+    def get_distance_vectors(cls,
+                             vectors_x, vectors_y,
+                             embedding_dimension,
+                             index_x, index_y):
+        # flatten and slice out each embedded vector
+        offset_x = index_x * embedding_dimension
+        offset_y = index_y * embedding_dimension
+        x_vec = vectors_x[offset_x:offset_x + embedding_dimension].astype(float)
+        y_vec = vectors_y[offset_y:offset_y + embedding_dimension].astype(float)
+
+        dot = np.dot(x_vec, y_vec)
+        norm_x = np.linalg.norm(x_vec)
+        norm_y = np.linalg.norm(y_vec)
+        if norm_x == 0 or norm_y == 0:
+            return 1.0
+        return 1.0 - (dot / (norm_x * norm_y))
